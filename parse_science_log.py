@@ -270,7 +270,7 @@ def fah_core_log():
     average_perf = yield perf_average
 
     platforms = [
-        Platform(platforms, platform_devices)
+        Platform(platform, platform_devices)
         for platform, platform_devices in zip(platforms, devices)
     ]
 

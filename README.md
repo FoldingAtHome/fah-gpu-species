@@ -88,26 +88,12 @@ $ python parse_science_log.py science.log
     },
     "platforms": [
       {
-        "info": [
-          {
-            "profile": "FULL_PROFILE",
-            "version": "OpenCL 1.2 CUDA 11.0.126",
-            "name": "NVIDIA CUDA",
-            "vendor": "NVIDIA Corporation"
-          },
-          {
-            "profile": "FULL_PROFILE",
-            "version": "OpenCL 2.0 AMD-APP (1800.11)",
-            "name": "AMD Accelerated Parallel Processing",
-            "vendor": "Advanced Micro Devices, Inc."
-          },
-          {
-            "profile": "FULL_PROFILE",
-            "version": "OpenCL 1.2 ",
-            "name": "Intel(R) OpenCL",
-            "vendor": "Intel(R) Corporation"
-          }
-        ],
+        "info": {
+          "profile": "FULL_PROFILE",
+          "version": "OpenCL 1.2 CUDA 11.0.126",
+          "name": "NVIDIA CUDA",
+          "vendor": "NVIDIA Corporation"
+        },
         "devices": [
           {
             "name": "P106-090",
@@ -132,26 +118,12 @@ $ python parse_science_log.py science.log
         ]
       },
       {
-        "info": [
-          {
-            "profile": "FULL_PROFILE",
-            "version": "OpenCL 1.2 CUDA 11.0.126",
-            "name": "NVIDIA CUDA",
-            "vendor": "NVIDIA Corporation"
-          },
-          {
-            "profile": "FULL_PROFILE",
-            "version": "OpenCL 2.0 AMD-APP (1800.11)",
-            "name": "AMD Accelerated Parallel Processing",
-            "vendor": "Advanced Micro Devices, Inc."
-          },
-          {
-            "profile": "FULL_PROFILE",
-            "version": "OpenCL 1.2 ",
-            "name": "Intel(R) OpenCL",
-            "vendor": "Intel(R) Corporation"
-          }
-        ],
+        "info": {
+          "profile": "FULL_PROFILE",
+          "version": "OpenCL 2.0 AMD-APP (1800.11)",
+          "name": "AMD Accelerated Parallel Processing",
+          "vendor": "Advanced Micro Devices, Inc."
+        },
         "devices": [
           {
             "name": "Intel(R) Core(TM) i7-3770 CPU @ 3.40GHz",
@@ -161,26 +133,12 @@ $ python parse_science_log.py science.log
         ]
       },
       {
-        "info": [
-          {
-            "profile": "FULL_PROFILE",
-            "version": "OpenCL 1.2 CUDA 11.0.126",
-            "name": "NVIDIA CUDA",
-            "vendor": "NVIDIA Corporation"
-          },
-          {
-            "profile": "FULL_PROFILE",
-            "version": "OpenCL 2.0 AMD-APP (1800.11)",
-            "name": "AMD Accelerated Parallel Processing",
-            "vendor": "Advanced Micro Devices, Inc."
-          },
-          {
-            "profile": "FULL_PROFILE",
-            "version": "OpenCL 1.2 ",
-            "name": "Intel(R) OpenCL",
-            "vendor": "Intel(R) Corporation"
-          }
-        ],
+        "info": {
+          "profile": "FULL_PROFILE",
+          "version": "OpenCL 1.2 ",
+          "name": "Intel(R) OpenCL",
+          "vendor": "Intel(R) Corporation"
+        },
         "devices": [
           {
             "name": "Intel(R) Core(TM) i7-3770 CPU @ 3.40GHz",
