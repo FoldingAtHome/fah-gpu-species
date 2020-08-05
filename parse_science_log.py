@@ -122,7 +122,7 @@ def match_heading(sec_name: str) -> Parser:
     return heading(whitespace >> string(sec_name) << whitespace)
 
 
-def prop(key: Parser, value: Parser):
+def prop(key: Parser, value: Parser) -> Parser:
     @generate
     def inner():
         k = yield key
@@ -177,7 +177,7 @@ fah_core_header = match_heading("Core22 Folding@home Core") >> seq(
 version_decl = string("Version ") >> semver << newline
 
 
-def var_def(var_name: str):
+def var_def(var_name: str) -> Parser:
     return (
         whitespace
         >> string(f"{var_name} =")
@@ -187,15 +187,11 @@ def var_def(var_name: str):
     )
 
 
-def platform_device_section(i: int, parser):
-    return whitespace >> string(f"-- {i} --") >> newline >> parser
-
-
 def numbered_list(get_parser: Callable[[int], Parser], length: int):
     return seq(*[get_parser(i) for i in range(length)])
 
 
-def platform(platform_idx: int):
+def platform(platform_idx: int) -> Parser:
     return (
         whitespace
         >> string(f"-- {platform_idx} --")
@@ -214,7 +210,7 @@ platforms_decl = (
 )
 
 
-def platform_device(device_idx: int):
+def platform_device(device_idx: int) -> Parser:
     return (
         whitespace
         >> string(f"-- {device_idx} --")
@@ -227,7 +223,7 @@ def platform_device(device_idx: int):
     )
 
 
-def platform_devices_decl(platform_idx: int):
+def platform_devices_decl(platform_idx: int) -> Parser:
     return (
         string("(")
         >> decimal_number
@@ -236,7 +232,7 @@ def platform_devices_decl(platform_idx: int):
     )
 
 
-def platform_devices(platform_idx: int):
+def platform_devices(platform_idx: int) -> Parser:
     @generate
     def inner():
         num_devices = yield platform_devices_decl(platform_idx)
@@ -246,6 +242,7 @@ def platform_devices(platform_idx: int):
 
     return inner
 
+
 perf = floating << string(" ns/day")
 
 perf_checkpoint = line_with(string("Performance since last checkpoint: ") >> perf)
@@ -254,7 +251,7 @@ perf_average = line_with(string("Average performance: ") >> perf)
 
 
 @generate
-def fah_core_log():
+def fah_core_log() -> Parser:
     yield section_break
     yield string("Folding@home GPU Core22 Folding@home Core")
     yield newline
@@ -283,7 +280,7 @@ def fah_core_log():
 
 
 @generate
-def science_log():
+def science_log() -> Parser:
     header = yield fah_core_header
     yield (any_heading >> many_until(any_char, any_heading | section_break)) * 3
     log = yield fah_core_log
