@@ -99,11 +99,20 @@ class FahCoreLog:
     average_perf_ns_day: float
 
 
+def arg_value(key: str, args: List[Arg]) -> str:
+    return next(arg for arg in args if arg.key == key).val
+
+
 @dataclass_json
 @dataclass
 class ScienceLog:
     fah_core_header: FahCoreHeader
     fah_core_log: FahCoreLog
+
+    def get_active_device(self):
+        platform_idx = int(arg_value("opencl-platform", self.fah_core_header.args))
+        device_idx = int(arg_value("opencl-device", self.fah_core_header.args))
+        return self.fah_core_log.platforms[platform_idx].devices[device_idx]
 
 
 semver = decimal_number.sep_by(string(".")).combine(SemVer)
