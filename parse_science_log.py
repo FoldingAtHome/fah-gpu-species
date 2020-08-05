@@ -288,14 +288,18 @@ def science_log() -> Parser:
     return ScienceLog(header, log)
 
 
-def parse(input_file: str):
+def parse(input_file: str) -> ScienceLog:
     with open(input_file, "r") as f:
         text = f.read()
 
-    print(science_log.parse(text).to_json())
+    return science_log.parse(text)
+
+
+def to_json(input_file: str) -> str:
+    print(parse(input_file).to_json())
 
 
 if __name__ == "__main__":
     import fire
 
-    fire.Fire(parse)
+    fire.Fire(to_json)
