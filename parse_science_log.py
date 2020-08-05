@@ -12,7 +12,7 @@ from parsy import (
     string,
     whitespace,
 )
-from typing import Callable, List
+from typing import Callable, List, Optional
 
 decimal_number = regex(r"[0-9]+").map(int)
 
@@ -99,8 +99,11 @@ class FahCoreLog:
     average_perf_ns_day: float
 
 
-def arg_value(key: str, args: List[KeyValue]) -> str:
-    return next(arg for arg in args if arg.key == key).val
+def arg_value(key: str, args: List[KeyValue]) -> Optional[str]:
+    try:
+        return next(arg for arg in args if arg.key == key).val
+    except StopIteration:
+        return None
 
 
 @dataclass_json
@@ -109,10 +112,20 @@ class ScienceLog:
     fah_core_header: FahCoreHeader
     fah_core_log: FahCoreLog
 
-    def get_active_device(self):
-        platform_idx = int(arg_value("opencl-platform", self.fah_core_header.args))
-        device_idx = int(arg_value("opencl-device", self.fah_core_header.args))
-        return self.fah_core_log.platforms[platform_idx].devices[device_idx]
+    def get_active_device(self) -> Optional[Device]:
+        opencl_platform = arg_value("opencl-platform", self.fah_core_header.args)
+        opencl_device = arg_value("opencl-device", self.fah_core_header.args)
+
+        platform_idx = 0 if opencl_platform is None else int(opencl_platform)
+        device_idx = 0 if opencl_device is None else int(opencl_device)
+
+        try:
+            return self.fah_core_log.platforms[platform_idx].devices[device_idx]
+        except IndexError as e:
+            raise ValueError(
+                "Didn't find a match for the OpenCL platform, device "
+                "specified in arguments, or no valid OpenCL devices found."
+            )
 
 
 semver = decimal_number.sep_by(string(".")).combine(SemVer)
