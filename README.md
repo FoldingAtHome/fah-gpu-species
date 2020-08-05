@@ -1,17 +1,17 @@
-# fah-gpu-species
+# fah-gpu-analysis
 
-Work in progress to understand GPU performance on benchmarking task with a view to creating a data-driven specification for GPU species.
+Analysis to understand GPU performance on Folding@home benchmarking tasks. The eventual goal is to create a data-driven automatic assignment of GPU species.
 
-GPU species is an 8-bit integer assigned to each distinct device known to F@H and is used to constrain which GPUs can run work for a given project. For example, a project might have the setting `NVIDIAGPUSpecies >= 3`, which means that work units will only be assigned to NVIDIA GPUs with a GPUSpecies of 3 or higher.
+GPU species is an 8-bit unsigned integer (range 0 to 255) assigned to each distinct device known to F@H. It is used to constrain which GPUs can run work for a given project. For example, a project might have the setting `NVIDIAGPUSpecies >= 3`, which means that work units will only be assigned to NVIDIA GPUs with a GPUSpecies of 3 or higher.
 
 ## Parsing log files
 
-While it runs, the F@H core writes a file called `science.log` that contains, among other things, GPU device information and timing data useful for assessing the relative performance of GPUs. The script [`parse_science_log.py`](parse_science_log.py) can be used to extract useful information from these files. It can either be used as a library, deserializing to Python dataclasses for further analysis, or as a CLI tool, producing JSON.
+While it runs, the F@H core writes a log file called `science.log` that contains, among other things, GPU device information and timing data useful for assessing the relative performance of GPUs. The script [`parse_science_log.py`](parse_science_log.py) can be used to extract useful information from these files. It can either be used as a library, deserializing to Python dataclasses for further analysis, or as a CLI tool, producing JSON.
 
 ### Usage example
 
 ```
-$ python parse_science_log.py science.log
+$ python parse_science_log.py /path/to/science.log
 ```
 
 ``` json
