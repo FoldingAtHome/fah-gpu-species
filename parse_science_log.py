@@ -134,14 +134,14 @@ section_break = string("*") * 80 >> newline
 
 
 def heading(name: Parser) -> Parser:
-    return line_with(regex(r"\*+") >> name << regex(r"\*+"))
+    return line_with(regex(r"\*+ ") >> name << regex(r" \*+"))
 
 
-any_heading = heading(regex(r"[^\*\n]+")).map(str.strip)
+any_heading = heading(many_until(any_char, string(" *")))
 
 
 def match_heading(sec_name: str) -> Parser:
-    return heading(whitespace >> string(sec_name) << whitespace)
+    return heading(string(sec_name))
 
 
 def prop(key: Parser, value: Parser) -> Parser:
@@ -155,15 +155,17 @@ def prop(key: Parser, value: Parser) -> Parser:
     return line_with(inner)
 
 
-any_prop = prop(letter.at_least(1).concat(), regex(r"[^\n]+"))
-
-
 def match_prop(name: str, value: Parser) -> Parser:
     return prop(string(name), value).map(lambda p: p.val)
 
 
+any_prop_firstline = prop(letter.at_least(1).concat(), regex(r"[^\n]+"))
+
+
 def string_prop(name: str) -> Parser:
-    return match_prop(name, many_until(any_char, any_prop | any_heading).concat())
+    return match_prop(
+        name, many_until(any_char, any_prop_firstline | any_heading).concat()
+    )
 
 
 @generate
