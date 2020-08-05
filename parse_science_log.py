@@ -39,7 +39,7 @@ class SemVer:
 
 @dataclass_json
 @dataclass
-class Arg:
+class KeyValue:
     key: str
     val: str
 
@@ -63,7 +63,7 @@ class FahCoreHeader:
     bits: str
     mode: str
     maintainers: str
-    args: List[Arg]
+    args: List[KeyValue]
 
 
 @dataclass_json
@@ -99,7 +99,7 @@ class FahCoreLog:
     average_perf_ns_day: float
 
 
-def arg_value(key: str, args: List[Arg]) -> str:
+def arg_value(key: str, args: List[KeyValue]) -> str:
     return next(arg for arg in args if arg.key == key).val
 
 
@@ -137,7 +137,7 @@ def prop(key: Parser, value: Parser) -> Parser:
         k = yield key
         yield string(": ")
         v = yield value
-        return k, v
+        return KeyValue(k, v)
 
     return line_with(inner)
 
@@ -146,7 +146,7 @@ any_prop = prop(letter.at_least(1).concat(), regex(r"[^\n]+"))
 
 
 def match_prop(name: str, value: Parser) -> Parser:
-    return prop(string(name), value).map(lambda p: p[1])
+    return prop(string(name), value).map(lambda p: p.val)
 
 
 def string_prop(name: str) -> Parser:
@@ -159,7 +159,7 @@ def arg():
     key = yield regex(r"[^\s]+")
     yield whitespace
     val = yield regex(r"[^\s]+")
-    return Arg(key, val)
+    return KeyValue(key, val)
 
 
 fah_core_header = match_heading("Core22 Folding@home Core") >> seq(
@@ -261,7 +261,6 @@ perf_average = line_with(string("Average performance: ") >> perf)
 
 @generate
 def fah_core_log() -> Parser:
-    yield section_break
     yield string("Folding@home GPU Core22 Folding@home Core")
     yield newline
     version = yield version_decl
@@ -292,6 +291,7 @@ def fah_core_log() -> Parser:
 def science_log() -> Parser:
     header = yield fah_core_header
     yield (any_heading >> many_until(any_char, any_heading | section_break)) * 3
+    yield section_break
     log = yield fah_core_log
     yield any_char.many()
     return ScienceLog(header, log)
