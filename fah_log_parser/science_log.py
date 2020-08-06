@@ -111,7 +111,7 @@ class ScienceLog:
     fah_core_header: FahCoreHeader
     fah_core_log: FahCoreLog
 
-    def get_active_device(self) -> Optional[Device]:
+    def get_active_device(self) -> Device:
         opencl_platform = arg_value("opencl-platform", self.fah_core_header.args)
         opencl_device = arg_value("opencl-device", self.fah_core_header.args)
 
