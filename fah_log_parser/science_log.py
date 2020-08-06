@@ -127,11 +127,6 @@ class ScienceLog:
             )
 
 
-semver = decimal_number.sep_by(string(".")).combine(SemVer)
-
-section_break = string("*") * 80 >> newline
-
-
 def heading(name: Parser) -> Parser:
     return line_with(regex(r"\*+ ") >> name << regex(r" \*+"))
 
@@ -176,6 +171,8 @@ def arg():
     return KeyValue(key, val)
 
 
+semver = decimal_number.sep_by(string(".")).combine(SemVer)
+
 fah_core_header = match_heading("Core22 Folding@home Core") >> seq(
     core=string_prop("Core"),
     type_=string_prop("Type"),
@@ -197,9 +194,6 @@ fah_core_header = match_heading("Core22 Folding@home Core") >> seq(
 ).combine_dict(FahCoreHeader)
 
 
-version_decl = string("Version ") >> semver << newline
-
-
 def var_def(var_name: str) -> Parser:
     return (
         whitespace
@@ -208,10 +202,6 @@ def var_def(var_name: str) -> Parser:
         >> regex("[^\n]+").concat()
         << newline
     )
-
-
-def numbered_list(get_parser: Callable[[int], Parser], length: int):
-    return seq(*[get_parser(i) for i in range(length)])
 
 
 def platform(platform_idx: int) -> Parser:
@@ -226,11 +216,6 @@ def platform(platform_idx: int) -> Parser:
             vendor=var_def("VENDOR"),
         ).combine_dict(PlatformInfo)
     )
-
-
-platforms_decl = (
-    string("[") >> decimal_number << string("] compatible platform(s):") << newline
-)
 
 
 def platform_device(device_idx: int) -> Parser:
@@ -255,6 +240,10 @@ def platform_devices_decl(platform_idx: int) -> Parser:
     )
 
 
+def numbered_list(get_parser: Callable[[int], Parser], length: int):
+    return seq(*[get_parser(i) for i in range(length)])
+
+
 def platform_devices(platform_idx: int) -> Parser:
     @generate
     def inner():
@@ -266,15 +255,16 @@ def platform_devices(platform_idx: int) -> Parser:
     return inner
 
 
-perf = floating << string(" ns/day")
-
-perf_checkpoint = line_with(string("Performance since last checkpoint: ") >> perf)
-
-perf_average = line_with(string("Average performance: ") >> perf)
-
-
 @generate
 def fah_core_log() -> Parser:
+    version_decl = string("Version ") >> semver << newline
+    platforms_decl = line_with(
+        string("[") >> decimal_number << string("] compatible platform(s):")
+    )
+    perf = floating << string(" ns/day")
+    perf_checkpoint = line_with(string("Performance since last checkpoint: ") >> perf)
+    perf_average = line_with(string("Average performance: ") >> perf)
+
     yield string("Folding@home GPU Core22 Folding@home Core")
     yield newline
     version = yield version_decl
@@ -301,10 +291,15 @@ def fah_core_log() -> Parser:
     )
 
 
+section_break = string("*") * 80 >> newline
+
+any_section = any_heading >> many_until(any_char, any_heading | section_break)
+
+
 @generate
 def science_log() -> Parser:
     header = yield fah_core_header
-    yield (any_heading >> many_until(any_char, any_heading | section_break)) * 3
+    yield any_section * 3
     yield section_break
     log = yield fah_core_log
     yield any_char.many()
