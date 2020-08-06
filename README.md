@@ -19,7 +19,7 @@ While it runs, the F@H core writes a log file called `science.log` that contains
 ### Usage example
 
 ``` shell
-$ parse_fah_log /path/to/science.log | jq '.fah_core_log'
+$ python parse_science_log.py /path/to/science.log | jq '.fah_core_log'
 ```
 
 ``` json
