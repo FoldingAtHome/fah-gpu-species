@@ -5,7 +5,6 @@ setup(
     version="0.1",
     packages=find_packages(),
     install_requires=[
-        "docutils>=0.3",
         "fire>=0.3",
         "parsy>=1.3",
         "dataclasses-json>=0.5",
