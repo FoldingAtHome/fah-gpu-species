@@ -4,7 +4,6 @@ from datetime import datetime
 from parsy import (
     Parser,
     any_char,
-    eof,
     generate,
     letter,
     regex,
@@ -285,7 +284,7 @@ def fah_core_log() -> Parser:
     devices = yield numbered_list(platform_devices, num_platforms)
     yield many_until(any_char, perf_checkpoint)
     checkpoint_perfs = yield perf_checkpoint.sep_by(
-        many_until(any_char, perf_checkpoint | eof)
+        many_until(any_char, perf_checkpoint | perf_average)
     )
     average_perf = yield perf_average
 
