@@ -123,7 +123,7 @@ class ScienceLog:
             return self.fah_core_log.platforms[platform_idx].devices[device_idx]
         except IndexError as e:
             raise ValueError(
-                "Didn't find a match for the OpenCL platform, device "
+                "Didn't find a match for the OpenCL platform/device "
                 "specified in arguments, or no valid OpenCL devices found."
             )
 
@@ -310,20 +310,3 @@ def science_log() -> Parser:
     log = yield fah_core_log
     yield any_char.many()
     return ScienceLog(header, log)
-
-
-def parse(input_file: str) -> ScienceLog:
-    with open(input_file, "r") as f:
-        text = f.read()
-
-    return science_log.parse(text)
-
-
-def to_json(input_file: str) -> str:
-    print(parse(input_file).to_json())
-
-
-if __name__ == "__main__":
-    import fire
-
-    fire.Fire(to_json)
