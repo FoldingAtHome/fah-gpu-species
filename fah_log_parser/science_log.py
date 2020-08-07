@@ -24,8 +24,16 @@ def line_with(p: Parser) -> Parser:
     return whitespace.optional() >> p << newline
 
 
-def many_until(p: Parser, until: Parser, term_desc="") -> Parser:
-    return (until.should_fail(term_desc) >> p).many()
+def except_(p: Parser, e: Parser, description: str) -> Parser:
+    return e.should_fail(f"not {description}") >> p
+
+
+def many_until(p: Parser, until: Parser, description: str) -> Parser:
+    return except_(p, until, description).many()
+
+
+def many_until_string(p: Parser, s: str) -> Parser:
+    return many_until(p, string(s), s)
 
 
 @dataclass_json
@@ -131,11 +139,11 @@ def heading(name: Parser) -> Parser:
     return line_with(regex(r"\*+ ") >> name << regex(r" \*+"))
 
 
-any_heading = heading(many_until(any_char, string(" *")))
+any_heading = heading(many_until_string(any_char, " *"))
 
 
-def match_heading(sec_name: str) -> Parser:
-    return heading(string(sec_name))
+def match_heading(name: str) -> Parser:
+    return heading(string(name))
 
 
 def prop(key: Parser, value: Parser) -> Parser:
@@ -153,21 +161,30 @@ def match_prop(name: str, value: Parser) -> Parser:
     return prop(string(name), value).map(lambda p: p.val)
 
 
-any_prop_firstline = prop(letter.at_least(1).concat(), regex(r"[^\n]+"))
+any_char_except_newline = except_(any_char, newline, r"\n")
+
+
+any_prop_firstline = prop(
+    letter.at_least(1).concat(), any_char_except_newline.at_least(1).concat()
+)
 
 
 def string_prop(name: str) -> Parser:
     return match_prop(
-        name, many_until(any_char, any_prop_firstline | any_heading).concat()
+        name,
+        many_until(
+            any_char, any_prop_firstline | any_heading, "property or heading"
+        ).concat(),
     )
 
 
 @generate
 def arg():
+    name = except_(any_char, whitespace, r"\s").at_least(1).concat()
     yield string("-")
-    key = yield regex(r"[^\s]+")
+    key = yield name
     yield whitespace
-    val = yield regex(r"[^\s]+")
+    val = yield name
     return KeyValue(key, val)
 
 
@@ -195,48 +212,35 @@ fah_core_header = match_heading("Core22 Folding@home Core") >> seq(
 
 
 def var_def(var_name: str) -> Parser:
-    return (
-        whitespace
-        >> string(f"{var_name} =")
+    return line_with(
+        string(f"{var_name} =")
         >> whitespace
-        >> regex("[^\n]+").concat()
-        << newline
+        >> any_char_except_newline.at_least(1).concat()
     )
 
 
 def platform(platform_idx: int) -> Parser:
-    return (
-        whitespace
-        >> string(f"-- {platform_idx} --")
-        >> newline
-        >> seq(
-            profile=var_def("PROFILE"),
-            version=var_def("VERSION"),
-            name=var_def("NAME"),
-            vendor=var_def("VENDOR"),
-        ).combine_dict(PlatformInfo)
-    )
+    return line_with(string(f"-- {platform_idx} --")) >> seq(
+        profile=var_def("PROFILE"),
+        version=var_def("VERSION"),
+        name=var_def("NAME"),
+        vendor=var_def("VENDOR"),
+    ).combine_dict(PlatformInfo)
 
 
 def platform_device(device_idx: int) -> Parser:
-    return (
-        whitespace
-        >> string(f"-- {device_idx} --")
-        >> newline
-        >> seq(
-            name=var_def("DEVICE_NAME"),
-            vendor=var_def("DEVICE_VENDOR"),
-            version=var_def("DEVICE_VERSION"),
-        ).combine_dict(Device)
-    )
+    return line_with(string(f"-- {device_idx} --")) >> seq(
+        name=var_def("DEVICE_NAME"),
+        vendor=var_def("DEVICE_VENDOR"),
+        version=var_def("DEVICE_VERSION"),
+    ).combine_dict(Device)
 
 
 def platform_devices_decl(platform_idx: int) -> Parser:
-    return (
+    return line_with(
         string("(")
         >> decimal_number
         << string(f") device(s) found on platform {platform_idx}:")
-        << newline
     )
 
 
@@ -257,7 +261,7 @@ def platform_devices(platform_idx: int) -> Parser:
 
 @generate
 def fah_core_log() -> Parser:
-    version_decl = string("Version ") >> semver << newline
+    version_decl = line_with(string("Version ") >> semver)
     platforms_decl = line_with(
         string("[") >> decimal_number << string("] compatible platform(s):")
     )
@@ -265,35 +269,38 @@ def fah_core_log() -> Parser:
     perf_checkpoint = line_with(string("Performance since last checkpoint: ") >> perf)
     perf_average = line_with(string("Average performance: ") >> perf)
 
-    yield string("Folding@home GPU Core22 Folding@home Core")
-    yield newline
+    yield line_with(string("Folding@home GPU Core22 Folding@home Core"))
     version = yield version_decl
     num_platforms = yield platforms_decl
     platforms = yield numbered_list(platform, num_platforms)
     yield newline
     devices = yield numbered_list(platform_devices, num_platforms)
-    yield many_until(any_char, perf_checkpoint)
+    yield many_until(any_char, perf_checkpoint, "checkpoint")
     checkpoint_perfs = yield perf_checkpoint.sep_by(
-        many_until(any_char, perf_checkpoint | perf_average)
+        many_until(
+            any_char,
+            perf_checkpoint | perf_average,
+            "checkpoint or average performace",
+        )
     )
     average_perf = yield perf_average
 
-    platforms = [
-        Platform(platform, platform_devices)
-        for platform, platform_devices in zip(platforms, devices)
-    ]
-
     return FahCoreLog(
         version=version,
-        platforms=platforms,
+        platforms=[
+            Platform(platform, platform_devices)
+            for platform, platform_devices in zip(platforms, devices)
+        ],
         checkpoint_perfs_ns_day=checkpoint_perfs,
         average_perf_ns_day=average_perf,
     )
 
 
-section_break = string("*") * 80 >> newline
+section_break = line_with(string("*") * 80)
 
-any_section = any_heading >> many_until(any_char, any_heading | section_break)
+any_section = any_heading >> many_until(
+    any_char, any_heading | section_break, "heading or section break"
+)
 
 
 @generate
