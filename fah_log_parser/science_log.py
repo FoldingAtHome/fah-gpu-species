@@ -103,7 +103,7 @@ class FahCoreLog:
     version: SemVer
     platforms: List[Platform]
     checkpoint_perfs_ns_day: List[float]
-    average_perf_ns_day: float
+    average_perf_ns_day: Optional[float]
 
 
 def arg_value(key: str, args: List[KeyValue]) -> Optional[str]:
@@ -283,7 +283,7 @@ def fah_core_log() -> Parser:
             "checkpoint or average performace",
         )
     )
-    average_perf = yield perf_average
+    average_perf = yield perf_average.optional()
 
     return FahCoreLog(
         version=version,
