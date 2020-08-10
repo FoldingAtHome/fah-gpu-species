@@ -1,4 +1,6 @@
-# fah-gpu-analysis
+# fah-gpu-analysis (EXPERIMENTAL)
+
+**DISCLAIMER: the GPU benchmark data in this repo is experimental and not final. For now, the code and data presented here is intended as an example of parsing performance data from fah-core logs, and of the types of analysis that might be useful to automate intelligent assignment of work units to specific devices.**
 
 Analysis to understand GPU performance on Folding@home benchmarking tasks. The eventual goal is to create a data-driven automatic assignment of GPU species.
 
