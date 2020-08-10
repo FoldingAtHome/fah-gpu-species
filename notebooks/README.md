@@ -1,4 +1,4 @@
-## Notebooks
+# Notebooks
 
 To install requirements for notebooks:
 
