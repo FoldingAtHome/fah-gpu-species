@@ -107,13 +107,3 @@ $ parse_fah_log /path/to/science.log | jq '.fah_core_log'
   "average_perf_ns_day": 38.9613
 }
 ```
-
-## Notebooks
-
-To install requirements:
-
-```shell
-cd notebooks/
-pip install -r requirements.txt
-```
-
