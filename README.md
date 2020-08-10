@@ -16,7 +16,7 @@ $ python setup.py install
 
 ## Parsing log files
 
-While it runs, the F@H core writes a log file called `science.log` that contains, among other things, GPU device information and timing data useful for assessing the relative performance of GPUs. The script [`parse_science_log.py`](parse_science_log.py) can be used to extract useful information from these files. It can either be used as a library, deserializing to Python dataclasses for further analysis, or as a CLI tool, producing JSON.
+While it runs, the F@H core writes a log file called `science.log` that contains, among other things, GPU device information and timing data useful for assessing the relative performance of GPUs. The command `parse_fah_log` can be used to extract useful information from these files. It can either be used as a library, deserializing to Python dataclass instances for further analysis, or as a CLI tool producing JSON.
 
 ### Usage example
 
