@@ -4,6 +4,7 @@ from datetime import datetime
 from parsy import (
     Parser,
     any_char,
+    decimal_digit,
     generate,
     letter,
     regex,
@@ -13,9 +14,13 @@ from parsy import (
 )
 from typing import Callable, List, Optional
 
-decimal_number = regex(r"[0-9]+").map(int)
+some_digits = decimal_digit.at_least(1).concat()
 
-floating = regex(r"[0-9\.]+").map(float)
+integer = some_digits.map(int).desc("integer")
+
+floating = (
+    (some_digits + string(".") + some_digits).map(float).desc("floating-point number")
+)
 
 newline = string("\n")
 
@@ -188,7 +193,7 @@ def arg():
     return KeyValue(key, val)
 
 
-semver = decimal_number.sep_by(string(".")).combine(SemVer)
+semver = integer.sep_by(string(".")).combine(SemVer)
 
 fah_core_header = match_heading("Core22 Folding@home Core") >> seq(
     core=string_prop("Core"),
@@ -239,7 +244,7 @@ def platform_device(device_idx: int) -> Parser:
 def platform_devices_decl(platform_idx: int) -> Parser:
     return line_with(
         string("(")
-        >> decimal_number
+        >> integer
         << string(f") device(s) found on platform {platform_idx}:")
     )
 
@@ -263,7 +268,7 @@ def platform_devices(platform_idx: int) -> Parser:
 def fah_core_log() -> Parser:
     version_decl = line_with(string("Version ") >> semver)
     platforms_decl = line_with(
-        string("[") >> decimal_number << string("] compatible platform(s):")
+        string("[") >> integer << string("] compatible platform(s):")
     )
     perf = floating << string(" ns/day")
     perf_checkpoint = line_with(string("Performance since last checkpoint: ") >> perf)
@@ -296,7 +301,7 @@ def fah_core_log() -> Parser:
     )
 
 
-section_break = line_with(string("*") * 80)
+section_break = line_with(string("*" * 80))
 
 any_section = any_heading >> many_until(
     any_char, any_heading | section_break, "heading or section break"
