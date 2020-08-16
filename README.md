@@ -14,6 +14,12 @@ See [notebooks](notebooks) for example analyses.
 $ python setup.py install
 ```
 
+## Downloading log files from work server
+For example, with `FAH_HOST`, `SERVER_ID`, and `PROJ_ID` in the environment:
+```shell
+rsync --include '*/' --include '*/science.log' --exclude '*' --recursive $FAH_HOST:server2/data/SVR${SERVER_ID}/PROJ${PROJ_ID} ./
+```
+
 ## Parsing log files
 
 While it runs, the F@H core writes a log file called `science.log` that contains, among other things, GPU device information and timing data useful for assessing the relative performance of GPUs. The command `parse_fah_log` can be used to extract useful information from these files. It can either be used as a library, deserializing to Python dataclass instances for further analysis, or as a CLI tool producing JSON.
