@@ -24,6 +24,8 @@ floating = (
 
 newline = string("\n")
 
+dash = string("-")
+
 
 def line_with(p: Parser) -> Parser:
     return whitespace.optional() >> p << newline
@@ -41,6 +43,14 @@ def many_until_string(p: Parser, s: str) -> Parser:
     return many_until(p, string(s), s)
 
 
+def bracketed(p: Parser) -> Parser:
+    return string("[") >> p << string("]")
+
+
+def parenthesized(p: Parser) -> Parser:
+    return string("(") >> p << string(")")
+
+
 @dataclass_json
 @dataclass
 class SemVer:
@@ -51,9 +61,9 @@ class SemVer:
 
 @dataclass_json
 @dataclass
-class KeyValue:
+class CommandArg:
     key: str
-    val: str
+    val: Optional[str]
 
 
 @dataclass_json
@@ -75,7 +85,7 @@ class FahCoreHeader:
     bits: str
     mode: str
     maintainers: str
-    args: List[KeyValue]
+    args: List[CommandArg]
 
 
 @dataclass_json
@@ -111,7 +121,7 @@ class FahCoreLog:
     average_perf_ns_day: Optional[float]
 
 
-def arg_value(key: str, args: List[KeyValue]) -> Optional[str]:
+def arg_value(key: str, args: List[CommandArg]) -> Optional[str]:
     try:
         return next(arg for arg in args if arg.key == key).val
     except StopIteration:
@@ -141,7 +151,13 @@ class ScienceLog:
 
 
 def heading(name: Parser) -> Parser:
-    return line_with(regex(r"\*+ ") >> name << regex(r" \*+"))
+    return line_with(
+        string("*").at_least(1)
+        >> whitespace
+        >> name
+        << whitespace
+        << string("*").at_least(1)
+    ).desc("heading")
 
 
 any_heading = heading(many_until_string(any_char, " *"))
@@ -157,16 +173,16 @@ def prop(key: Parser, value: Parser) -> Parser:
         k = yield key
         yield string(": ")
         v = yield value
-        return KeyValue(k, v)
+        return k, v
 
     return line_with(inner)
 
 
 def match_prop(name: str, value: Parser) -> Parser:
-    return prop(string(name), value).map(lambda p: p.val)
+    return prop(string(name), value).map(lambda p: p[1])
 
 
-any_char_except_newline = except_(any_char, newline, r"\n")
+any_char_except_newline = except_(any_char, newline, "newline")
 
 
 any_prop_firstline = prop(
@@ -184,13 +200,22 @@ def string_prop(name: str) -> Parser:
 
 
 @generate
-def arg():
-    name = except_(any_char, whitespace, r"\s").at_least(1).concat()
-    yield string("-")
-    key = yield name
-    yield whitespace
-    val = yield name
-    return KeyValue(key, val)
+def command_arg():
+    yield dash
+    key = (
+        yield except_(any_char, whitespace, "whitespace")
+        .at_least(1)
+        .concat()
+        .desc("argument key")
+    )
+    val = yield (
+        whitespace
+        >> except_(any_char, whitespace | dash, "whitespace or dash")
+        .at_least(1)
+        .concat()
+        .desc("argument value")
+    ).optional()
+    return CommandArg(key, val)
 
 
 semver = integer.sep_by(string(".")).combine(SemVer)
@@ -212,7 +237,7 @@ fah_core_header = match_heading("Core22 Folding@home Core") >> seq(
     bits=string_prop("Bits"),
     mode=string_prop("Mode"),
     maintainers=string_prop("Maintainers"),
-    args=match_prop("Args", arg.sep_by(whitespace)),
+    args=match_prop("Args", command_arg.sep_by(whitespace)),
 ).combine_dict(FahCoreHeader)
 
 
@@ -243,9 +268,8 @@ def platform_device(device_idx: int) -> Parser:
 
 def platform_devices_decl(platform_idx: int) -> Parser:
     return line_with(
-        string("(")
-        >> integer
-        << string(f") device(s) found on platform {platform_idx}:")
+        parenthesized(integer)
+        << string(f" device(s) found on platform {platform_idx}:")
     )
 
 
@@ -267,9 +291,7 @@ def platform_devices(platform_idx: int) -> Parser:
 @generate
 def fah_core_log() -> Parser:
     version_decl = line_with(string("Version ") >> semver)
-    platforms_decl = line_with(
-        string("[") >> integer << string("] compatible platform(s):")
-    )
+    platforms_decl = line_with(bracketed(integer) << string(" compatible platform(s):"))
     perf = floating << string(" ns/day")
     perf_checkpoint = line_with(string("Performance since last checkpoint: ") >> perf)
     perf_average = line_with(string("Average performance: ") >> perf)
