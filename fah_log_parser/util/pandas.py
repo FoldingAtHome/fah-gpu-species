@@ -17,7 +17,13 @@ class ResultRow:
     run: int
     clone: int
     gen: int
+    os: str
+    platform_name: str
+    platform_vendor: str
+    platform_version: str
     device_name: str
+    device_vendor: str
+    device_version: str
     perf_ns_per_day: float
 
 
@@ -46,7 +52,7 @@ def _parse_log(project_data_path: str, path: str) -> Optional[ResultRow]:
 
     try:
         log = parse(science_log, path)
-        device_name = log.get_active_device().name
+        platform_info, device = log.get_active_device()
     except (ParseError, ValueError) as e:
         logging.warning("Parse error: %s: %s", path, e)
         return None
@@ -55,18 +61,27 @@ def _parse_log(project_data_path: str, path: str) -> Optional[ResultRow]:
         run=int(match["run"]),
         clone=int(match["clone"]),
         gen=int(match["gen"]),
-        device_name=device_name,
+        os=log.fah_core_header.platform,
+        platform_name=platform_info.name,
+        platform_vendor=platform_info.vendor,
+        platform_version=platform_info.version,
+        device_name=device.name,
+        device_vendor=device.vendor,
+        device_version=device.version,
         perf_ns_per_day=log.fah_core_log.average_perf_ns_day,
     )
 
 
 def parse_logs_to_df(
-    project_data_path: str, num_procs: Optional[int] = None,
+    project_data_path: str, num_procs: Optional[int] = None, limit: int = None
 ) -> pd.DataFrame:
 
     pattern = get_log_file_path(project_data_path, "*", "*", "*")
-    files = glob(pattern)
     parse_log = partial(_parse_log, project_data_path)
+
+    files = glob(pattern)
+    if limit is not None:
+        files = files[:limit]
 
     with multiprocessing.Pool(processes=num_procs) as pool:
         iter_results = pool.imap_unordered(parse_log, files)

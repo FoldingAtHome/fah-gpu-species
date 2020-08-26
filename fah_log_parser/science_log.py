@@ -12,7 +12,7 @@ from parsy import (
     string,
     whitespace,
 )
-from typing import Callable, List, Optional
+from typing import Callable, List, Optional, Tuple
 
 some_digits = decimal_digit.at_least(1).concat()
 
@@ -134,7 +134,7 @@ class ScienceLog:
     fah_core_header: FahCoreHeader
     fah_core_log: FahCoreLog
 
-    def get_active_device(self) -> Device:
+    def get_active_device(self) -> Tuple[PlatformInfo, Device]:
         opencl_platform = arg_value("opencl-platform", self.fah_core_header.args)
         opencl_device = arg_value("opencl-device", self.fah_core_header.args)
 
@@ -142,11 +142,12 @@ class ScienceLog:
         device_idx = 0 if opencl_device is None else int(opencl_device)
 
         try:
-            return self.fah_core_log.platforms[platform_idx].devices[device_idx]
-        except IndexError as e:
+            platform = self.fah_core_log.platforms[platform_idx]
+            return platform.info, platform.devices[device_idx]
+        except IndexError:
             raise ValueError(
-                "Didn't find a match for the OpenCL platform/device "
-                "specified in arguments, or no valid OpenCL devices found."
+                f"Didn't find a match for the OpenCL platform, device: "
+                f"{platform_idx}, {device_idx}"
             )
 
 
