@@ -9,11 +9,12 @@ dataclasses-json==0.5.2
 decorator==4.4.2
 defusedxml==0.6.0
 entrypoints==0.3
--e git+git@github.com:FoldingAtHome/fah-gpu-species.git@bf6612fddc6eae7996f8c1d184f9a0b5e67fac4c#egg=fah_log_parser
+-e git+git@github.com:FoldingAtHome/fah-gpu-species.git@ca1ee17f808cf094fb9917e492af3320448c6409#egg=fah_log_parser
 fire==0.3.1
 ipykernel==5.3.4
 ipython==7.17.0
 ipython-genutils==0.2.0
+ipywidgets==7.5.1
 jedi==0.17.2
 Jinja2==2.11.2
 jsonschema==3.2.0
@@ -65,3 +66,4 @@ typing-extensions==3.7.4.2
 typing-inspect==0.6.0
 wcwidth==0.2.5
 webencodings==0.5.1
+widgetsnbextension==3.5.1
