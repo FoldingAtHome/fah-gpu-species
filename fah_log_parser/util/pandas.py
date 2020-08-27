@@ -1,19 +1,17 @@
-from dataclasses import asdict, dataclass
 from functools import partial
 from glob import glob
 import logging
 import multiprocessing
 import os
 import re
-from typing import Optional, Union
+from typing import NamedTuple, Optional, Union
 import pandas as pd
 from tqdm.auto import tqdm
 from ..core import ParseError, parse
 from ..science_log import science_log
 
 
-@dataclass
-class ResultRow:
+class ResultRow(NamedTuple):
     run: int
     clone: int
     gen: int
@@ -87,7 +85,7 @@ def parse_logs_to_df(
         iter_results = pool.imap_unordered(parse_log, files)
         results = list(tqdm(iter_results, total=len(files)))
 
-    records = [asdict(r) for r in results if r is not None]
+    records = [r._asdict() for r in results if r is not None]
     num_failed = len(files) - len(records)
 
     if num_failed > 0:

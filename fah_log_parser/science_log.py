@@ -1,5 +1,3 @@
-from dataclasses import dataclass
-from dataclasses_json import dataclass_json
 from datetime import datetime
 from parsy import (
     Parser,
@@ -12,7 +10,7 @@ from parsy import (
     string,
     whitespace,
 )
-from typing import Callable, List, Optional, Tuple
+from typing import Callable, List, NamedTuple, Optional, Tuple
 
 some_digits = decimal_digit.at_least(1).concat()
 
@@ -51,24 +49,18 @@ def parenthesized(p: Parser) -> Parser:
     return string("(") >> p << string(")")
 
 
-@dataclass_json
-@dataclass
-class SemVer:
+class SemVer(NamedTuple):
     major: int
     minor: int
     patch: int
 
 
-@dataclass_json
-@dataclass
-class CommandArg:
+class CommandArg(NamedTuple):
     key: str
     val: Optional[str]
 
 
-@dataclass_json
-@dataclass
-class FahCoreHeader:
+class FahCoreHeader(NamedTuple):
     core: str
     type_: str
     version: SemVer
@@ -88,33 +80,25 @@ class FahCoreHeader:
     args: List[CommandArg]
 
 
-@dataclass_json
-@dataclass
-class PlatformInfo:
+class PlatformInfo(NamedTuple):
     profile: str
     version: str
     name: str
     vendor: str
 
 
-@dataclass_json
-@dataclass
-class Device:
+class Device(NamedTuple):
     name: str
     vendor: str
     version: str
 
 
-@dataclass_json
-@dataclass
-class Platform:
+class Platform(NamedTuple):
     info: PlatformInfo
     devices: List[Device]
 
 
-@dataclass_json
-@dataclass
-class FahCoreLog:
+class FahCoreLog(NamedTuple):
     version: SemVer
     platforms: List[Platform]
     checkpoint_perfs_ns_day: List[float]
@@ -128,9 +112,7 @@ def arg_value(key: str, args: List[CommandArg]) -> Optional[str]:
         return None
 
 
-@dataclass_json
-@dataclass
-class ScienceLog:
+class ScienceLog(NamedTuple):
     fah_core_header: FahCoreHeader
     fah_core_log: FahCoreLog
 
