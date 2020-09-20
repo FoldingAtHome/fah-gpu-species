@@ -4,11 +4,12 @@ import logging
 import multiprocessing
 import os
 import re
-from typing import NamedTuple, Optional, Union
+from typing import NamedTuple, Optional, Union, cast
+
 import pandas as pd
 from tqdm.auto import tqdm
 from ..core import ParseError, parse
-from ..science_log import science_log
+from ..science_log import ScienceLog, science_log
 
 
 class ResultRow(NamedTuple):
@@ -22,7 +23,7 @@ class ResultRow(NamedTuple):
     device_name: str
     device_vendor: str
     device_version: str
-    perf_ns_per_day: float
+    perf_ns_per_day: Optional[float]
 
 
 def get_log_file_path(
@@ -39,7 +40,10 @@ def get_log_file_path(
 def _parse_log(project_data_path: str, path: str) -> Optional[ResultRow]:
 
     regex = get_log_file_path(
-        project_data_path, r"(?P<run>[0-9]+)", r"(?P<clone>[0-9]+)", r"(?P<gen>[0-9])",
+        project_data_path,
+        r"(?P<run>[0-9]+)",
+        r"(?P<clone>[0-9]+)",
+        r"(?P<gen>[0-9])",
     )
 
     match = re.search(regex, path)
@@ -49,7 +53,7 @@ def _parse_log(project_data_path: str, path: str) -> Optional[ResultRow]:
         return None
 
     try:
-        log = parse(science_log, path)
+        log = cast(ScienceLog, parse(science_log, path))
         platform_info, device = log.get_active_device()
     except (ParseError, ValueError) as e:
         logging.warning("Parse error: %s: %s", path, e)

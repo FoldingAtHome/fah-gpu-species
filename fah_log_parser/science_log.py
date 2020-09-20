@@ -1,4 +1,7 @@
 from datetime import datetime
+from typing import Callable, List, NamedTuple, Optional, Tuple
+
+from .core import Model
 from parsy import (
     Parser,
     any_char,
@@ -10,7 +13,6 @@ from parsy import (
     string,
     whitespace,
 )
-from typing import Callable, List, NamedTuple, Optional, Tuple
 
 some_digits = decimal_digit.at_least(1).concat()
 
@@ -49,18 +51,18 @@ def parenthesized(p: Parser) -> Parser:
     return string("(") >> p << string(")")
 
 
-class SemVer(NamedTuple):
+class SemVer(Model):
     major: int
     minor: int
     patch: int
 
 
-class CommandArg(NamedTuple):
+class CommandArg(Model):
     key: str
     val: Optional[str]
 
 
-class FahCoreHeader(NamedTuple):
+class FahCoreHeader(Model):
     core: str
     type_: str
     version: SemVer
@@ -80,25 +82,25 @@ class FahCoreHeader(NamedTuple):
     args: List[CommandArg]
 
 
-class PlatformInfo(NamedTuple):
+class PlatformInfo(Model):
     profile: str
     version: str
     name: str
     vendor: str
 
 
-class Device(NamedTuple):
+class Device(Model):
     name: str
     vendor: str
     version: str
 
 
-class Platform(NamedTuple):
+class Platform(Model):
     info: PlatformInfo
     devices: List[Device]
 
 
-class FahCoreLog(NamedTuple):
+class FahCoreLog(Model):
     version: SemVer
     platforms: List[Platform]
     checkpoint_perfs_ns_day: List[float]
@@ -112,7 +114,7 @@ def arg_value(key: str, args: List[CommandArg]) -> Optional[str]:
         return None
 
 
-class ScienceLog(NamedTuple):
+class ScienceLog(Model):
     fah_core_header: FahCoreHeader
     fah_core_log: FahCoreLog
 
@@ -198,10 +200,12 @@ def command_arg():
         .concat()
         .desc("argument value")
     ).optional()
-    return CommandArg(key, val)
+    return CommandArg(key=key, val=val)
 
 
-semver = integer.sep_by(string(".")).combine(SemVer)
+semver = seq(
+    major=integer << string("."), minor=integer << string("."), patch=integer
+).combine_dict(SemVer)
 
 fah_core_header = match_heading("Core22 Folding@home Core") >> seq(
     core=string_prop("Core"),
@@ -298,7 +302,7 @@ def fah_core_log() -> Parser:
     return FahCoreLog(
         version=version,
         platforms=[
-            Platform(platform, platform_devices)
+            Platform(info=platform, devices=platform_devices)
             for platform, platform_devices in zip(platforms, devices)
         ],
         checkpoint_perfs_ns_day=checkpoint_perfs,
@@ -320,4 +324,4 @@ def science_log() -> Parser:
     yield section_break
     log = yield fah_core_log
     yield any_char.many()
-    return ScienceLog(header, log)
+    return ScienceLog(fah_core_header=header, fah_core_log=log)

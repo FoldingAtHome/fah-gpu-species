@@ -18,7 +18,7 @@ def _parse_science_log_json(input_file: str) -> str:
     str
         JSON-encoded structured data parsed from log file
     """
-    return parse(science_log, input_file).to_json()
+    return parse(science_log, input_file).json()
 
 
 def main() -> None:
