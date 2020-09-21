@@ -23,6 +23,8 @@ class ResultRow(NamedTuple):
     device_name: str
     device_vendor: str
     device_version: str
+    device_driver_version: str
+    cuda_enabled: bool
     perf_ns_per_day: Optional[float]
 
 
@@ -54,8 +56,29 @@ def _parse_log(project_data_path: str, path: str) -> Optional[ResultRow]:
 
     try:
         log = cast(ScienceLog, parse(science_log, path))
-        platform_info, device = log.get_active_device()
-    except (ParseError, ValueError) as e:
+
+        if log.core_log.cuda and log.core_log.cuda.enabled:
+            try:
+                cuda_platform = next(
+                    platform
+                    for platform in log.core_log.platforms
+                    if platform.info.name == "NVIDIA CUDA"
+                )
+            except StopIteration:
+                raise RuntimeError(
+                    "Core22 reported CUDA enabled, "
+                    "but didn't find CUDA in listed platforms: "
+                    + ", ".join(
+                        platform.info.name for platform in log.core_log.platforms
+                    )
+                )
+            platform_info, device = (
+                cuda_platform.info,
+                cuda_platform.devices[log.core_log.cuda.gpu],
+            )
+        else:
+            platform_info, device = log.get_active_device()
+    except (ParseError, RuntimeError, UnicodeDecodeError) as e:
         logging.warning("Parse error: %s: %s", path, e)
         return None
 
@@ -63,14 +86,16 @@ def _parse_log(project_data_path: str, path: str) -> Optional[ResultRow]:
         run=int(match["run"]),
         clone=int(match["clone"]),
         gen=int(match["gen"]),
-        os=log.fah_core_header.platform,
+        os=log.core_header.platform,
         platform_name=platform_info.name,
         platform_vendor=platform_info.vendor,
         platform_version=platform_info.version,
         device_name=device.name,
         device_vendor=device.vendor,
         device_version=device.version,
-        perf_ns_per_day=log.fah_core_log.average_perf_ns_day,
+        device_driver_version=device.driver_version,
+        cuda_enabled=log.core_log.cuda is not None and log.core_log.cuda.enabled,
+        perf_ns_per_day=log.core_log.average_perf_ns_day,
     )
 
 

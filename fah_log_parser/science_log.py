@@ -104,15 +104,15 @@ class Platform(Model):
     devices: List[Device]
 
 
-class UsingDevice(Model):
-    cuda: bool
+class CudaStatus(Model):
+    enabled: bool
     gpu: int
 
 
 class CoreLog(Model):
     version: SemVer
     platforms: List[Platform]
-    using: Optional[UsingDevice]
+    cuda: Optional[CudaStatus]
     checkpoint_perfs_ns_day: List[float]
     average_perf_ns_day: Optional[float]
 
@@ -139,7 +139,7 @@ class ScienceLog(Model):
             platform = self.core_log.platforms[platform_idx]
             return platform.info, platform.devices[device_idx]
         except IndexError:
-            raise ValueError(
+            raise RuntimeError(
                 f"Didn't find a match for the OpenCL platform, device: "
                 f"{platform_idx}, {device_idx}"
             )
@@ -286,11 +286,11 @@ def core_log() -> Parser:
     perf_checkpoint = line_with(string("Performance since last checkpoint: ") >> perf)
     perf_average = line_with(string("Average performance: ") >> perf)
     platform_name = string("CUDA") | string("OpenCL")
-    using_message = line_with(
+    cuda_status = line_with(
         seq(
-            cuda=string("Using ") >> platform_name.map(lambda name: name == "CUDA"),
+            enabled=string("Using ") >> platform_name.map(lambda name: name == "CUDA"),
             gpu=string(" and gpu ") >> integer,
-        ).combine_dict(UsingDevice)
+        ).combine_dict(CudaStatus)
     )
 
     yield line_with(string("Folding@home GPU Core22 Folding@home Core"))
@@ -298,7 +298,7 @@ def core_log() -> Parser:
     num_platforms = yield platforms_decl
     platforms = yield numbered_list(platform, num_platforms) << newline
     devices = yield numbered_list(platform_devices, num_platforms)
-    using = yield search(using_message, "using message").optional()
+    cuda_status = yield search(cuda_status, "CUDA status").optional()
     yield many_until(any_char, perf_checkpoint, "checkpoint")
     checkpoint_perfs = yield perf_checkpoint.sep_by(
         many_until(
@@ -315,7 +315,7 @@ def core_log() -> Parser:
             Platform(info=platform, devices=platform_devices)
             for platform, platform_devices in zip(platforms, devices)
         ],
-        using=using,
+        cuda=cuda_status,
         checkpoint_perfs_ns_day=checkpoint_perfs,
         average_perf_ns_day=average_perf,
     )
