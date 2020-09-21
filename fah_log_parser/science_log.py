@@ -163,14 +163,7 @@ def match_heading(name: str) -> Parser:
 
 
 def prop(key: Parser, value: Parser) -> Parser:
-    @generate
-    def inner():
-        k = yield key
-        yield string(": ")
-        v = yield value
-        return k, v
-
-    return line_with(inner)
+    return line_with(seq(key, string(": ") >> value))
 
 
 def match_prop(name: str, value: Parser) -> Parser:
@@ -194,15 +187,13 @@ def string_prop(name: str) -> Parser:
     )
 
 
-@generate
-def command_arg():
-    yield dash
-    key = yield (letter | dash).at_least(1).concat().desc("argument key")
-    val = yield (
+command_arg = seq(
+    key=dash >> (letter | dash).at_least(1).concat().desc("argument key"),
+    val=(
         (whitespace | string("="))
         >> (letter | decimal_digit).at_least(1).concat().desc("argument value")
-    ).optional()
-    return CommandArg(key=key, val=val)
+    ).optional(),
+).combine_dict(CommandArg)
 
 
 semver = seq(
