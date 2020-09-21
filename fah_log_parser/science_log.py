@@ -186,18 +186,10 @@ def string_prop(name: str) -> Parser:
 @generate
 def command_arg():
     yield dash
-    key = (
-        yield except_(any_char, whitespace, "whitespace")
-        .at_least(1)
-        .concat()
-        .desc("argument key")
-    )
+    key = yield (letter | dash).at_least(1).concat().desc("argument key")
     val = yield (
-        whitespace
-        >> except_(any_char, whitespace | dash, "whitespace or dash")
-        .at_least(1)
-        .concat()
-        .desc("argument value")
+        (whitespace | string("="))
+        >> (letter | decimal_digit).at_least(1).concat().desc("argument value")
     ).optional()
     return CommandArg(key=key, val=val)
 
