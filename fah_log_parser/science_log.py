@@ -207,25 +207,28 @@ semver = seq(
     major=integer << string("."), minor=integer << string("."), patch=integer
 ).combine_dict(SemVer)
 
-fah_core_header = match_heading("Core22 Folding@home Core") >> seq(
-    core=string_prop("Core"),
-    type_=string_prop("Type"),
-    version=match_prop("Version", semver),
-    author=string_prop("Author"),
-    copyright_=string_prop("Copyright"),
-    homepage=string_prop("Homepage"),
-    date=string_prop("Date").map(lambda s: datetime.strptime(s, "%b %d %Y")),
-    time=string_prop("Time"),
-    revision=string_prop("Revision"),
-    branch=string_prop("Branch"),
-    compiler=string_prop("Compiler"),
-    options=string_prop("Options"),
-    platform=string_prop("Platform"),
-    bits=string_prop("Bits"),
-    mode=string_prop("Mode"),
-    maintainers=string_prop("Maintainers"),
-    args=match_prop("Args", command_arg.sep_by(whitespace)),
-).combine_dict(FahCoreHeader)
+fah_core_header = (
+    match_heading("Core22 Folding@home Core")
+    >> seq(
+        core=string_prop("Core"),
+        type_=string_prop("Type"),
+        version=match_prop("Version", semver),
+        author=string_prop("Author"),
+        copyright_=string_prop("Copyright"),
+        homepage=string_prop("Homepage"),
+        date=string_prop("Date").map(lambda s: datetime.strptime(s, "%b %d %Y")),
+        time=string_prop("Time"),
+        revision=string_prop("Revision"),
+        branch=string_prop("Branch"),
+        compiler=string_prop("Compiler"),
+        options=string_prop("Options"),
+        platform=string_prop("Platform"),
+        bits=string_prop("Bits"),
+        mode=string_prop("Mode"),
+        maintainers=string_prop("Maintainers"),
+        args=match_prop("Args", command_arg.sep_by(whitespace)),
+    ).combine_dict(FahCoreHeader)
+)
 
 
 def var_def(var_name: str) -> Parser:
@@ -237,20 +240,26 @@ def var_def(var_name: str) -> Parser:
 
 
 def platform(platform_idx: int) -> Parser:
-    return line_with(string(f"-- {platform_idx} --")) >> seq(
-        profile=var_def("PROFILE"),
-        version=var_def("VERSION"),
-        name=var_def("NAME"),
-        vendor=var_def("VENDOR"),
-    ).combine_dict(PlatformInfo)
+    return (
+        line_with(string(f"-- {platform_idx} --"))
+        >> seq(
+            profile=var_def("PROFILE"),
+            version=var_def("VERSION"),
+            name=var_def("NAME"),
+            vendor=var_def("VENDOR"),
+        ).combine_dict(PlatformInfo)
+    )
 
 
 def platform_device(device_idx: int) -> Parser:
-    return line_with(string(f"-- {device_idx} --")) >> seq(
-        name=var_def("DEVICE_NAME"),
-        vendor=var_def("DEVICE_VENDOR"),
-        version=var_def("DEVICE_VERSION"),
-    ).combine_dict(Device)
+    return (
+        line_with(string(f"-- {device_idx} --"))
+        >> seq(
+            name=var_def("DEVICE_NAME"),
+            vendor=var_def("DEVICE_VENDOR"),
+            version=var_def("DEVICE_VERSION"),
+        ).combine_dict(Device)
+    )
 
 
 def platform_devices_decl(platform_idx: int) -> Parser:
