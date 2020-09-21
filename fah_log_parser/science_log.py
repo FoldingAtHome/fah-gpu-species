@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Callable, List, NamedTuple, Optional, Tuple
+from typing import Callable, List, Optional, Tuple
 
 from .core import Model
 from parsy import (
@@ -8,7 +8,6 @@ from parsy import (
     decimal_digit,
     generate,
     letter,
-    regex,
     seq,
     string,
     whitespace,
@@ -62,7 +61,7 @@ class CommandArg(Model):
     val: Optional[str]
 
 
-class FahCoreHeader(Model):
+class CoreHeader(Model):
     core: str
     type_: str
     version: SemVer
@@ -100,7 +99,7 @@ class Platform(Model):
     devices: List[Device]
 
 
-class FahCoreLog(Model):
+class CoreLog(Model):
     version: SemVer
     platforms: List[Platform]
     checkpoint_perfs_ns_day: List[float]
@@ -115,18 +114,18 @@ def arg_value(key: str, args: List[CommandArg]) -> Optional[str]:
 
 
 class ScienceLog(Model):
-    fah_core_header: FahCoreHeader
-    fah_core_log: FahCoreLog
+    core_header: CoreHeader
+    core_log: CoreLog
 
     def get_active_device(self) -> Tuple[PlatformInfo, Device]:
-        opencl_platform = arg_value("opencl-platform", self.fah_core_header.args)
-        opencl_device = arg_value("opencl-device", self.fah_core_header.args)
+        opencl_platform = arg_value("opencl-platform", self.core_header.args)
+        opencl_device = arg_value("opencl-device", self.core_header.args)
 
         platform_idx = 0 if opencl_platform is None else int(opencl_platform)
         device_idx = 0 if opencl_device is None else int(opencl_device)
 
         try:
-            platform = self.fah_core_log.platforms[platform_idx]
+            platform = self.core_log.platforms[platform_idx]
             return platform.info, platform.devices[device_idx]
         except IndexError:
             raise ValueError(
@@ -207,7 +206,7 @@ semver = seq(
     major=integer << string("."), minor=integer << string("."), patch=integer
 ).combine_dict(SemVer)
 
-fah_core_header = (
+core_header = (
     match_heading("Core22 Folding@home Core")
     >> seq(
         core=string_prop("Core"),
@@ -227,7 +226,7 @@ fah_core_header = (
         mode=string_prop("Mode"),
         maintainers=string_prop("Maintainers"),
         args=match_prop("Args", command_arg.sep_by(whitespace)),
-    ).combine_dict(FahCoreHeader)
+    ).combine_dict(CoreHeader)
 )
 
 
@@ -285,7 +284,7 @@ def platform_devices(platform_idx: int) -> Parser:
 
 
 @generate
-def fah_core_log() -> Parser:
+def core_log() -> Parser:
     version_decl = line_with(string("Version ") >> semver)
     platforms_decl = line_with(bracketed(integer) << string(" compatible platform(s):"))
     perf = floating << string(" ns/day")
@@ -308,7 +307,7 @@ def fah_core_log() -> Parser:
     )
     average_perf = yield perf_average.optional()
 
-    return FahCoreLog(
+    return CoreLog(
         version=version,
         platforms=[
             Platform(info=platform, devices=platform_devices)
@@ -328,9 +327,9 @@ any_section = any_heading >> many_until(
 
 @generate
 def science_log() -> Parser:
-    header = yield fah_core_header
+    header = yield core_header
     yield any_section * 3
     yield section_break
-    log = yield fah_core_log
+    log = yield core_log
     yield any_char.many()
-    return ScienceLog(fah_core_header=header, fah_core_log=log)
+    return ScienceLog(core_header=header, core_log=log)
