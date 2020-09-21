@@ -3,11 +3,13 @@ from glob import glob
 import logging
 import multiprocessing
 import os
+import random
 import re
 from typing import NamedTuple, Optional, Union, cast
 
 import pandas as pd
-from tqdm.auto import tqdm
+from rich.progress import track
+
 from ..core import ParseError, parse
 from ..science_log import ScienceLog, science_log
 
@@ -99,20 +101,20 @@ def _parse_log(project_data_path: str, path: str) -> Optional[ResultRow]:
     )
 
 
-def parse_logs_to_df(
-    project_data_path: str, num_procs: Optional[int] = None, limit: int = None
+def parse_project_logs(
+    project_data_path: str, num_procs: Optional[int] = None, sample: int = None
 ) -> pd.DataFrame:
 
     pattern = get_log_file_path(project_data_path, "*", "*", "*")
     parse_log = partial(_parse_log, project_data_path)
 
     files = glob(pattern)
-    if limit is not None:
-        files = files[:limit]
+    if sample is not None:
+        files = random.choices(files, k=sample)
 
     with multiprocessing.Pool(processes=num_procs) as pool:
         iter_results = pool.imap_unordered(parse_log, files)
-        results = list(tqdm(iter_results, total=len(files)))
+        results = list(track(iter_results, total=len(files)))
 
     records = [r._asdict() for r in results if r is not None]
     num_failed = len(files) - len(records)
@@ -120,4 +122,4 @@ def parse_logs_to_df(
     if num_failed > 0:
         logging.warning("Failed to parse %d files out of %d", num_failed, len(files))
 
-    return pd.DataFrame.from_records(records)
+    return pd.DataFrame.from_records(records).set_index(["run", "clone", "gen"])
