@@ -42,6 +42,10 @@ def many_until_string(p: Parser, s: str) -> Parser:
     return many_until(p, string(s), s)
 
 
+def search(p: Parser, description: str) -> Parser:
+    return many_until(any_char, p, description) >> p
+
+
 def bracketed(p: Parser) -> Parser:
     return string("[") >> p << string("]")
 
@@ -92,6 +96,7 @@ class Device(Model):
     name: str
     vendor: str
     version: str
+    driver_version: Optional[str]
 
 
 class Platform(Model):
@@ -99,9 +104,15 @@ class Platform(Model):
     devices: List[Device]
 
 
+class UsingDevice(Model):
+    cuda: bool
+    gpu: int
+
+
 class CoreLog(Model):
     version: SemVer
     platforms: List[Platform]
+    using: Optional[UsingDevice]
     checkpoint_perfs_ns_day: List[float]
     average_perf_ns_day: Optional[float]
 
@@ -249,6 +260,7 @@ def platform_device(device_idx: int) -> Parser:
             name=var_def("DEVICE_NAME"),
             vendor=var_def("DEVICE_VENDOR"),
             version=var_def("DEVICE_VERSION"),
+            driver_version=var_def("DRIVER_VERSION").optional(),
         ).combine_dict(Device)
     )
 
@@ -282,13 +294,20 @@ def core_log() -> Parser:
     perf = floating << string(" ns/day")
     perf_checkpoint = line_with(string("Performance since last checkpoint: ") >> perf)
     perf_average = line_with(string("Average performance: ") >> perf)
+    platform_name = string("CUDA") | string("OpenCL")
+    using_message = line_with(
+        seq(
+            cuda=string("Using ") >> platform_name.map(lambda name: name == "CUDA"),
+            gpu=string(" and gpu ") >> integer,
+        ).combine_dict(UsingDevice)
+    )
 
     yield line_with(string("Folding@home GPU Core22 Folding@home Core"))
     version = yield version_decl
     num_platforms = yield platforms_decl
-    platforms = yield numbered_list(platform, num_platforms)
-    yield newline
+    platforms = yield numbered_list(platform, num_platforms) << newline
     devices = yield numbered_list(platform_devices, num_platforms)
+    using = yield search(using_message, "using message").optional()
     yield many_until(any_char, perf_checkpoint, "checkpoint")
     checkpoint_perfs = yield perf_checkpoint.sep_by(
         many_until(
@@ -305,6 +324,7 @@ def core_log() -> Parser:
             Platform(info=platform, devices=platform_devices)
             for platform, platform_devices in zip(platforms, devices)
         ],
+        using=using,
         checkpoint_perfs_ns_day=checkpoint_perfs,
         average_perf_ns_day=average_perf,
     )
@@ -312,15 +332,27 @@ def core_log() -> Parser:
 
 section_break = line_with(string("*" * 80))
 
-any_section = any_heading >> many_until(
-    any_char, any_heading | section_break, "heading or section break"
-)
+
+def section(heading: Parser) -> Parser:
+    return heading >> many_until(
+        any_char, any_heading | section_break, "end of section"
+    )
+
+
+any_section = section(any_heading)
+
+
+def match_section(name: str) -> Parser:
+    return section(match_heading(name))
 
 
 @generate
 def science_log() -> Parser:
     header = yield core_header
-    yield any_section * 3
+    yield match_section("libFAH")
+    yield match_section("CBang")
+    yield match_section("System")
+    yield match_section("OpenMM").optional()
     yield section_break
     log = yield core_log
     yield any_char.many()
