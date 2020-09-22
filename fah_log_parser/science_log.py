@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Callable, List, NamedTuple, Optional, Tuple
+from typing import Callable, List, Optional, Tuple
 
 from .core import Model
 from parsy import (
@@ -8,7 +8,6 @@ from parsy import (
     decimal_digit,
     generate,
     letter,
-    regex,
     seq,
     string,
     whitespace,
@@ -43,6 +42,10 @@ def many_until_string(p: Parser, s: str) -> Parser:
     return many_until(p, string(s), s)
 
 
+def search(p: Parser, description: str) -> Parser:
+    return many_until(any_char, p, description) >> p
+
+
 def bracketed(p: Parser) -> Parser:
     return string("[") >> p << string("]")
 
@@ -62,7 +65,7 @@ class CommandArg(Model):
     val: Optional[str]
 
 
-class FahCoreHeader(Model):
+class CoreHeader(Model):
     core: str
     type_: str
     version: SemVer
@@ -93,6 +96,7 @@ class Device(Model):
     name: str
     vendor: str
     version: str
+    driver_version: Optional[str]
 
 
 class Platform(Model):
@@ -100,9 +104,15 @@ class Platform(Model):
     devices: List[Device]
 
 
-class FahCoreLog(Model):
+class CudaStatus(Model):
+    enabled: bool
+    gpu: int
+
+
+class CoreLog(Model):
     version: SemVer
     platforms: List[Platform]
+    cuda: Optional[CudaStatus]
     checkpoint_perfs_ns_day: List[float]
     average_perf_ns_day: Optional[float]
 
@@ -115,21 +125,21 @@ def arg_value(key: str, args: List[CommandArg]) -> Optional[str]:
 
 
 class ScienceLog(Model):
-    fah_core_header: FahCoreHeader
-    fah_core_log: FahCoreLog
+    core_header: CoreHeader
+    core_log: CoreLog
 
     def get_active_device(self) -> Tuple[PlatformInfo, Device]:
-        opencl_platform = arg_value("opencl-platform", self.fah_core_header.args)
-        opencl_device = arg_value("opencl-device", self.fah_core_header.args)
+        opencl_platform = arg_value("opencl-platform", self.core_header.args)
+        opencl_device = arg_value("opencl-device", self.core_header.args)
 
         platform_idx = 0 if opencl_platform is None else int(opencl_platform)
         device_idx = 0 if opencl_device is None else int(opencl_device)
 
         try:
-            platform = self.fah_core_log.platforms[platform_idx]
+            platform = self.core_log.platforms[platform_idx]
             return platform.info, platform.devices[device_idx]
         except IndexError:
-            raise ValueError(
+            raise RuntimeError(
                 f"Didn't find a match for the OpenCL platform, device: "
                 f"{platform_idx}, {device_idx}"
             )
@@ -153,14 +163,7 @@ def match_heading(name: str) -> Parser:
 
 
 def prop(key: Parser, value: Parser) -> Parser:
-    @generate
-    def inner():
-        k = yield key
-        yield string(": ")
-        v = yield value
-        return k, v
-
-    return line_with(inner)
+    return line_with(seq(key, string(": ") >> value))
 
 
 def match_prop(name: str, value: Parser) -> Parser:
@@ -184,30 +187,20 @@ def string_prop(name: str) -> Parser:
     )
 
 
-@generate
-def command_arg():
-    yield dash
-    key = (
-        yield except_(any_char, whitespace, "whitespace")
-        .at_least(1)
-        .concat()
-        .desc("argument key")
-    )
-    val = yield (
-        whitespace
-        >> except_(any_char, whitespace | dash, "whitespace or dash")
-        .at_least(1)
-        .concat()
-        .desc("argument value")
-    ).optional()
-    return CommandArg(key=key, val=val)
+command_arg = seq(
+    key=dash >> (letter | dash).at_least(1).concat().desc("argument key"),
+    val=(
+        (whitespace | string("="))
+        >> (letter | decimal_digit).at_least(1).concat().desc("argument value")
+    ).optional(),
+).combine_dict(CommandArg)
 
 
 semver = seq(
     major=integer << string("."), minor=integer << string("."), patch=integer
 ).combine_dict(SemVer)
 
-fah_core_header = (
+core_header = (
     match_heading("Core22 Folding@home Core")
     >> seq(
         core=string_prop("Core"),
@@ -227,7 +220,7 @@ fah_core_header = (
         mode=string_prop("Mode"),
         maintainers=string_prop("Maintainers"),
         args=match_prop("Args", command_arg.sep_by(whitespace)),
-    ).combine_dict(FahCoreHeader)
+    ).combine_dict(CoreHeader)
 )
 
 
@@ -258,6 +251,7 @@ def platform_device(device_idx: int) -> Parser:
             name=var_def("DEVICE_NAME"),
             vendor=var_def("DEVICE_VENDOR"),
             version=var_def("DEVICE_VERSION"),
+            driver_version=var_def("DRIVER_VERSION").optional(),
         ).combine_dict(Device)
     )
 
@@ -285,19 +279,26 @@ def platform_devices(platform_idx: int) -> Parser:
 
 
 @generate
-def fah_core_log() -> Parser:
+def core_log() -> Parser:
     version_decl = line_with(string("Version ") >> semver)
     platforms_decl = line_with(bracketed(integer) << string(" compatible platform(s):"))
     perf = floating << string(" ns/day")
     perf_checkpoint = line_with(string("Performance since last checkpoint: ") >> perf)
     perf_average = line_with(string("Average performance: ") >> perf)
+    platform_name = string("CUDA") | string("OpenCL")
+    cuda_status = line_with(
+        seq(
+            enabled=string("Using ") >> platform_name.map(lambda name: name == "CUDA"),
+            gpu=string(" and gpu ") >> integer,
+        ).combine_dict(CudaStatus)
+    )
 
     yield line_with(string("Folding@home GPU Core22 Folding@home Core"))
     version = yield version_decl
     num_platforms = yield platforms_decl
-    platforms = yield numbered_list(platform, num_platforms)
-    yield newline
+    platforms = yield numbered_list(platform, num_platforms) << newline
     devices = yield numbered_list(platform_devices, num_platforms)
+    cuda_status = yield search(cuda_status, "CUDA status").optional()
     yield many_until(any_char, perf_checkpoint, "checkpoint")
     checkpoint_perfs = yield perf_checkpoint.sep_by(
         many_until(
@@ -308,12 +309,13 @@ def fah_core_log() -> Parser:
     )
     average_perf = yield perf_average.optional()
 
-    return FahCoreLog(
+    return CoreLog(
         version=version,
         platforms=[
             Platform(info=platform, devices=platform_devices)
             for platform, platform_devices in zip(platforms, devices)
         ],
+        cuda=cuda_status,
         checkpoint_perfs_ns_day=checkpoint_perfs,
         average_perf_ns_day=average_perf,
     )
@@ -321,16 +323,28 @@ def fah_core_log() -> Parser:
 
 section_break = line_with(string("*" * 80))
 
-any_section = any_heading >> many_until(
-    any_char, any_heading | section_break, "heading or section break"
-)
+
+def section(heading: Parser) -> Parser:
+    return heading >> many_until(
+        any_char, any_heading | section_break, "end of section"
+    )
+
+
+any_section = section(any_heading)
+
+
+def match_section(name: str) -> Parser:
+    return section(match_heading(name))
 
 
 @generate
 def science_log() -> Parser:
-    header = yield fah_core_header
-    yield any_section * 3
+    header = yield core_header
+    yield match_section("libFAH")
+    yield match_section("CBang")
+    yield match_section("System")
+    yield match_section("OpenMM").optional()
     yield section_break
-    log = yield fah_core_log
+    log = yield core_log
     yield any_char.many()
-    return ScienceLog(fah_core_header=header, fah_core_log=log)
+    return ScienceLog(core_header=header, core_log=log)
