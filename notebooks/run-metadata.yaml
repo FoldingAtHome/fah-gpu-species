@@ -1,0 +1,150 @@
+---
+RUN0:
+    name: DHFR PME
+    description: DHFR Joint AMBER-CHARMM benchmark with PME
+    num_atoms: 23558
+    nonbonded_method: PME
+    timestep: "2*fs"
+    integrator: simtk.openmm.LangevinIntegrator
+
+RUN1:
+    name: DHFR LJPME
+    description: DHFR Joint AMBER-CHARMM benchmark with LJPME
+    num_atoms: 23558
+    nonbonded_method: LJPME
+    timestep: "2*fs"
+    integrator: simtk.openmm.LangevinIntegrator
+
+RUN2:
+    name: DHFR RF
+    description: DHFR Joint AMBER-CHARMM benchmark with reaction field electrostatics
+    num_atoms: 23558
+    nonbonded_method: CutoffPeriodic
+    timestep: "2*fs"
+    integrator: simtk.openmm.LangevinIntegrator
+
+RUN3:
+    name: DHFR PME 4fs BAOAB
+    description: DHFR Joint AMBER-CHARMM benchmark with PME with 4 fs BAOAB
+    num_atoms: 23558
+    nonbonded_method: PME
+    timestep: "4*fs"
+    integrator: openmmtools.integrators.LangevinIntegrator
+
+RUN4:
+    name: apoa1 PME
+    description: ApoA1 benchmark with PME
+    num_atoms: 92224
+    nonbonded_method: PME
+    timestep: "2*fs"
+    integrator: simtk.openmm.LangevinIntegrator
+
+RUN5:
+    name: apoa1 LJPME
+    description: ApoA1 benchmark with LJPME
+    num_atoms: 92224
+    nonbonded_method: LJPME
+    timestep: "2*fs"
+    integrator: simtk.openmm.LangevinIntegrator
+
+RUN6:
+    name: apoa1 RF
+    description: ApoA1 benchmark with reaction field electrostatics
+    num_atoms: 92224
+    nonbonded_method: CutoffPeriodic
+    timestep: "2*fs"
+    integrator: simtk.openmm.LangevinIntegrator
+
+RUN7:
+    name: apoa1 RF
+    description: ApoA1 benchmark with PME with 4 fs BAOAB
+    num_atoms: 92224
+    nonbonded_method: PME
+    timestep: "4*fs"
+    integrator: openmmtools.integrators.LangevinIntegrator
+
+RUN8:
+    name: COVID Moonshot Sprint testing complex (constrained)
+    description: COVID Moonshot Sprint testing perses alchemical free energy calculation ligand in complex
+    num_atoms: 89705
+    nonbonded_method: PME
+    project: 13412
+    timestep: "4*fs"
+    integrator: openmmtools.integrators.LangevinIntegrator
+
+RUN9:
+    name: COVID Moonshot Sprint testing solvent (constrained)
+    description: COVID Moonshot Sprint testing perses alchemical free energy calculation ligand in solvent
+    num_atoms: 4071
+    nonbonded_method: PME
+    project: 13413
+    timestep: "4*fs"
+    integrator: openmmtools.integrators.LangevinIntegrator
+
+RUN10:
+    name: SARS-CoV-1 full spike
+    description: SARS-CoV-1 full spike
+    num_atoms: 371771
+    nonbonded_method: PME
+    pdbid: 5x58
+    project: 14251
+    timestep: "2*fs"
+    integrator: simtk.openmm.LangevinIntegrator
+
+RUN11:
+    name: SARS-CoV-2 full spike
+    description: SARS-CoV-2 full spike
+    num_atoms: 448584
+    nonbonded_method: PME
+    pdbid: 6vxx
+    project: 14253
+    timestep: "2*fs"
+    integrator: simtk.openmm.LangevinIntegrator
+
+RUN12:
+    name: SARS-CoV-2 Mpro monomer
+    description: SARS-CoV-2 main viral protease (Mpro) monomer
+    num_atoms: 62180
+    nonbonded_method: PME
+    pdbid: 6lu7
+    project: 11743
+    timestep: "4*fs"
+    integrator: openmmtools.integrators.LangevinIntegrator
+
+RUN13:
+    name: SARS-CoV-2 RBD:ACE2
+    description: SARS-CoV-2 RBD:ACE2 (homology model) complex
+    num_atoms: 182669
+    nonbonded_method: PME
+    pdbid: 2afj
+    project: 11743
+    timestep: "4*fs"
+    integrator: openmmtools.integrators.LangevinIntegrator
+
+RUN14:
+    name: SARS-CoV-2 RBD:S230 Ab
+    description: SARS-CoV-2 RBD (homology model):S230 antibody
+    num_atoms: 110730
+    nonbonded_method: PME
+    pdbid: 6nb8_2ghv
+    project: 11745
+    timestep: "4*fs"
+    integrator: openmmtools.integrators.LangevinIntegrator
+
+RUN15:
+    name: COVID Moonshot Sprint 4 complex (unconstrained)
+    description: COVID Moonshot Sprint 4 perses alchemical free energy calculation ligand in complex
+    num_atoms: 90725
+    nonbonded_method: PME
+    project: 13424
+    timestep: "2*fs"
+    integrator: openmmtools.integrators.LangevinIntegrator
+
+RUN16:
+    name: COVID Moonshot Sprint 4 solvent (unconstrained)
+    description: COVID Moonshot Sprint 4 perses alchemical free energy calculation ligand in solvent
+    num_atoms: 4058
+    nonbonded_method: PME
+    project: 13425
+    timestep: "2*fs"
+    integrator: openmmtools.integrators.LangevinIntegrator
