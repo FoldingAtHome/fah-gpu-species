@@ -109,6 +109,8 @@ def parse_project_logs(
     parse_log = partial(_parse_log, project_data_path)
 
     files = glob(pattern)
+    print(f'{len(files)} files found in path {project_data_path}')
+    
     if sample is not None:
         files = random.choices(files, k=sample)
 

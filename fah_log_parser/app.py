@@ -40,7 +40,10 @@ def _parse_logs_dataframe(
     import pandas as pd
     from rich.progress import track
 
-    if not projects:
+    print(f'data_dir: {data_dir}')
+    print(f'projects: {projects}')
+    
+    if not projects:        
         logging.warning("no projects specified")
         return
 
