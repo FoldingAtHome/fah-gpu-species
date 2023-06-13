@@ -11,7 +11,8 @@ from parsy import (
     seq,
     string,
     whitespace,
-    success
+    success,
+    regex
 )
 
 some_digits = decimal_digit.at_least(1).concat()
@@ -197,11 +198,13 @@ command_arg = seq(
 ).combine_dict(CommandArg)
 
 
-semver = seq(
+semver_full = seq(
     major=integer << string("."), minor=integer << string("."), patch=integer
 ).combine_dict(SemVer)
 
 semver_short = seq(major=integer << string("."), minor=integer).combine_dict(SemVer)
+
+semver = semver_full | semver_short
 
 core_header = (
     match_heading("Core22 Folding@home Core")
@@ -283,7 +286,7 @@ def platform_devices(platform_idx: int) -> Parser:
 
 @generate
 def core_log() -> Parser:
-    version_decl = line_with(string("Version ") >> semver_short) # WARNING 8.0 requires semver_short
+    version_decl = line_with(string("Version ") >> semver) # WARNING 8.0 requires semver_short
     platforms_decl = line_with(bracketed(integer) << string(" compatible platform(s):"))
     perf = floating << string(" ns/day")
     perf_checkpoint = line_with(string("Performance since last checkpoint: ") >> perf)
