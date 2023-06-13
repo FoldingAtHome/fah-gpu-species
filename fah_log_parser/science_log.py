@@ -27,7 +27,6 @@ newline = string("\n")
 
 dash = string("-")
 
-
 def line_with(p: Parser) -> Parser:
     return whitespace.optional() >> p << newline
 
