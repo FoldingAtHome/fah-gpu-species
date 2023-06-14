@@ -5,7 +5,7 @@ benchmarks:
   cutoff: 0.9
   ensemble: NPT
   precision: mixed
-  timestep_in_fs: 4.0
+  timestep_in_fs: 2.0
   platform: CUDA
   platform_properties:
     DeviceIndex: '0'
@@ -14,16 +14,16 @@ benchmarks:
     Precision: mixed
     UseCpuPme: 'false'
     CudaCompiler: /usr/local/cuda/bin/nvcc
-    TempDirectory: /scratch/lsftmp/18384955.tmpdir
+    TempDirectory: /scratch/lsftmp/18385159.tmpdir
     CudaHostCompiler: ''
     DisablePmeStream: 'false'
     DeterministicForces: 'false'
-  steps: 8648
-  elapsed_time: 29.109296
-  ns_per_day: 102.67334531209546
+  steps: 8709
+  elapsed_time: 29.113565
+  ns_per_day: 51.69120305259763
 system:
   hostname: lt11
-  timestamp: '2023-06-14T05:19:50.659566'
+  timestamp: '2023-06-14T07:49:07.244773'
   openmm_version: 8.0.0.dev-a780005
   cpuinfo: Intel(R) Xeon(R) CPU E5-2697 v4 @ 2.30GHz
   cpuarch: x86_64
