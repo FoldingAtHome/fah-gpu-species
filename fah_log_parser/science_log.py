@@ -11,6 +11,8 @@ from parsy import (
     seq,
     string,
     whitespace,
+    success,
+    regex
 )
 
 some_digits = decimal_digit.at_least(1).concat()
@@ -24,7 +26,6 @@ floating = (
 newline = string("\n")
 
 dash = string("-")
-
 
 def line_with(p: Parser) -> Parser:
     return whitespace.optional() >> p << newline
@@ -57,7 +58,7 @@ def parenthesized(p: Parser) -> Parser:
 class SemVer(Model):
     major: int
     minor: int
-    patch: int
+    patch: Optional[int] = 0
 
 
 class CommandArg(Model):
@@ -74,8 +75,8 @@ class CoreHeader(Model):
     homepage: str
     date: datetime
     time: str
-    revision: str
-    branch: str
+    revision: Optional[str]
+    branch: Optional[str]
     compiler: str
     options: str
     platform: str
@@ -196,9 +197,13 @@ command_arg = seq(
 ).combine_dict(CommandArg)
 
 
-semver = seq(
+semver_full = seq(
     major=integer << string("."), minor=integer << string("."), patch=integer
 ).combine_dict(SemVer)
+
+semver_short = seq(major=integer << string("."), minor=integer).combine_dict(SemVer)
+
+semver = semver_full | semver_short
 
 core_header = (
     match_heading("Core22 Folding@home Core")
@@ -211,8 +216,8 @@ core_header = (
         homepage=string_prop("Homepage"),
         date=string_prop("Date").map(lambda s: datetime.strptime(s, "%b %d %Y")),
         time=string_prop("Time"),
-        revision=string_prop("Revision"),
-        branch=string_prop("Branch"),
+        revision=string_prop("Revision").optional(),
+        branch=string_prop("Branch").optional(),
         compiler=string_prop("Compiler"),
         options=string_prop("Options"),
         platform=string_prop("Platform"),
@@ -280,7 +285,7 @@ def platform_devices(platform_idx: int) -> Parser:
 
 @generate
 def core_log() -> Parser:
-    version_decl = line_with(string("Version ") >> semver)
+    version_decl = line_with(string("Version ") >> semver) # WARNING 8.0 requires semver_short
     platforms_decl = line_with(bracketed(integer) << string(" compatible platform(s):"))
     perf = floating << string(" ns/day")
     perf_checkpoint = line_with(string("Performance since last checkpoint: ") >> perf)

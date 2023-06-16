@@ -1,0 +1,32 @@
+benchmarks:
+- test: rf
+  constraints: HBonds
+  hydrogen_mass: '1.5'
+  cutoff: 1.0
+  ensemble: NPT
+  precision: mixed
+  timestep_in_fs: 2.0
+  platform: CUDA
+  platform_properties:
+    DeviceIndex: '0'
+    DeviceName: NVIDIA GeForce GTX 1080
+    UseBlockingSync: 'false'
+    Precision: mixed
+    UseCpuPme: 'false'
+    CudaCompiler: /usr/local/cuda/bin/nvcc
+    TempDirectory: /scratch/lsftmp/18385159.tmpdir
+    CudaHostCompiler: ''
+    DisablePmeStream: 'false'
+    DeterministicForces: 'false'
+  steps: 68709
+  elapsed_time: 30.748135
+  ns_per_day: 386.1344826279707
+system:
+  hostname: lt11
+  timestamp: '2023-06-14T07:48:01.432929'
+  openmm_version: 8.0.0.dev-a780005
+  cpuinfo: Intel(R) Xeon(R) CPU E5-2697 v4 @ 2.30GHz
+  cpuarch: x86_64
+  system: Linux
+  nvidia_driver: 515.43.04
+  gpu: NVIDIA GeForce GTX 1080

@@ -1,0 +1,32 @@
+benchmarks:
+- test: pme
+  constraints: HBonds
+  hydrogen_mass: '1.5'
+  cutoff: 0.9
+  ensemble: NPT
+  precision: mixed
+  timestep_in_fs: 4.0
+  platform: CUDA
+  platform_properties:
+    DeviceIndex: '0'
+    DeviceName: NVIDIA GeForce RTX 2080 Ti
+    UseBlockingSync: 'false'
+    Precision: mixed
+    UseCpuPme: 'false'
+    CudaCompiler: /usr/local/cuda/bin/nvcc
+    TempDirectory: /scratch/lsftmp/18385128.tmpdir
+    CudaHostCompiler: ''
+    DisablePmeStream: 'false'
+    DeterministicForces: 'false'
+  steps: 80415
+  elapsed_time: 28.452457
+  ns_per_day: 976.7671031011486
+system:
+  hostname: lx08
+  timestamp: '2023-06-14T06:55:54.909452'
+  openmm_version: 8.0.0.dev-a780005
+  cpuinfo: Intel(R) Xeon(R) Gold 6230 CPU @ 2.10GHz
+  cpuarch: x86_64
+  system: Linux
+  nvidia_driver: 515.43.04
+  gpu: NVIDIA GeForce RTX 2080 Ti
